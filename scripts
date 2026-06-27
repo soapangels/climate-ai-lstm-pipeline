@@ -1,0 +1,40 @@
+import pandas as pd
+import numpy as np
+import knime.scripting.io as knio
+
+df = knio.input_tables[0].to_pandas()
+
+# --- CONFIGURATION ---
+window_size = 7 # Adjust to your current window
+target_col = 'tmax'
+date_col = 'fecha' # Ensure this matches your date column name
+
+# Only numerical features go into the LSTM
+feature_cols = ['tmed', 'tmin', 'tmax','velmedia', 'racha', 'sol', 'presMin', 'Sine', 'Cosine'] 
+
+data = df[feature_cols].values
+target = df[target_col].values
+dates = df[date_col].values
+
+X_flat = []
+y = []
+target_dates = []
+
+for i in range(window_size, len(df)):
+    # Grab window (Day 1 to 7)
+    window = data[i-window_size:i].flatten() 
+    X_flat.append(window.tolist())
+    
+    # Grab Target (Day 8)
+    y.append(target[i])
+    
+    # Grab the Date for Day 8
+    target_dates.append(dates[i])
+
+output_df = pd.DataFrame({
+    'Target_Date': target_dates,
+    'Sequence': X_flat,
+    'Target': y
+})
+
+knio.output_tables[0] = knio.Table.from_pandas(output_df)
